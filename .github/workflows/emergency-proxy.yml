@@ -22,18 +22,23 @@ jobs:
     - name: Deploy and Configure Authenticated Proxy
       shell: powershell
       run: |
+        # 1. Download and Extract Gost cleanly
         Invoke-WebRequest -Uri "https://github.com/ginuerzh/gost/releases/download/v2.11.5/gost-windows-amd64-2.11.5.zip" -OutFile "gost.zip"
         Expand-Archive -Path "gost.zip" -DestinationPath "gost" -Force
-        if (Test-Path ".\gost\gost-windows-amd64.exe") { Rename-Item ".\gost\gost-windows-amd64-2.11.5.exe" "gost.exe" }
-        if (Test-Path ".\gost\gost-windows-amd64.exe") { Rename-Item ".\gost\gost-windows-amd64.exe" "gost.exe" }
         
+        # Smoothly rename the binary file
+        Rename-Item ".\gost\gost-windows-amd64.exe" "gost.exe"
+        
+        # 2. Automatically generate secure, random credentials for this session
         $ProxyUser = -join ((65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
         $ProxyPass = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 12 | ForEach-Object {[char]$_})
         $ProxyPort = "8080"
         $TailscaleIP = (tailscale ip -4).Trim()
         
+        # 4. Launch the dual-protocol server
         Start-Process -FilePath ".\gost\gost.exe" -ArgumentList "-L=http://$($ProxyUser):$($ProxyPass)@:$ProxyPort", "-L=socks5://$($ProxyUser):$($ProxyPass)@:$ProxyPort" -WindowStyle Hidden
         
+        # 5. Format and print the exact credentials cleanly
         Write-Host "`n=================================================================="
         Write-Host " YOUR EMERGENCY HIGH-SPEED PROXY IS READY!"
         Write-Host "=================================================================="
