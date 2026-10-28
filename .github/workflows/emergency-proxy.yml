@@ -17,42 +17,34 @@ jobs:
       uses: tailscale/github-action@v3
       with:
         authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+        args: --accept-routes=true
 
     - name: Deploy and Configure Authenticated Proxy
       shell: powershell
       run: |
-        # 1. Download and Extract Gost (Handles original name mapping automatically)
-        Invoke-WebRequest -Uri "https://github.com/ginuerzh/gost/releases/download/v2.11.5/gost-windows-amd64-2.11.5.zip" -OutFile "gost.zip"
+        Invoke-WebRequest -Uri "https://github.com" -OutFile "gost.zip"
         Expand-Archive -Path "gost.zip" -DestinationPath "gost" -Force
-        
-        # Rename the executable so the system finds it cleanly
+        if (Test-Path ".\gost\gost-windows-amd64.exe") { Rename-Item ".\gost\gost-windows-amd64-2.11.5.exe" "gost.exe" }
         if (Test-Path ".\gost\gost-windows-amd64.exe") { Rename-Item ".\gost\gost-windows-amd64.exe" "gost.exe" }
         
-        # 2. Automatically generate secure, random credentials for this session
         $ProxyUser = -join ((65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
         $ProxyPass = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 12 | ForEach-Object {[char]$_})
         $ProxyPort = "8080"
-        
-        # 3. Retrieve the Runner's Tailscale IPv4 Address
         $TailscaleIP = (tailscale ip -4).Trim()
         
-        # 4. Launch the dual-protocol server
         Start-Process -FilePath ".\gost\gost.exe" -ArgumentList "-L=http://$($ProxyUser):$($ProxyPass)@:$ProxyPort", "-L=socks5://$($ProxyUser):$($ProxyPass)@:$ProxyPort" -WindowStyle Hidden
         
-        # 5. Format and print the exact credentials cleanly
-        Write-Host "`n"
-        Write-Host "==================================================================" -ForegroundColor Cyan
-        Write-Host " YOUR EMERGENCY HIGH-SPEED PROXY IS READY!" -ForegroundColor Green
-        Write-Host "==================================================================" -ForegroundColor Cyan
-        Write-Host " SERVER IP (Tailscale): $TailscaleIP" -ForegroundColor Yellow
-        Write-Host " PORT:                 $ProxyPort" -ForegroundColor Yellow
-        Write-Host " USERNAME:             $ProxyUser" -ForegroundColor Yellow
-        Write-Host " PASSWORD:             $ProxyPass" -ForegroundColor Yellow
-        Write-Host "==================================================================" -ForegroundColor Cyan
-        Write-Host " COPY-PASTE FOR SOCKS5 COMPATIBLE APPS:" -ForegroundColor Cyan
-        Write-Host "socks5://$($ProxyUser):$($ProxyPass)@$($TailscaleIP):$ProxyPort" -ForegroundColor Green
-        Write-Host "==================================================================" -ForegroundColor Cyan
-        Write-Host "`n"
+        Write-Host "`n=================================================================="
+        Write-Host " YOUR EMERGENCY HIGH-SPEED PROXY IS READY!"
+        Write-Host "=================================================================="
+        Write-Host " SERVER IP (Tailscale): $TailscaleIP"
+        Write-Host " PORT:                 $ProxyPort"
+        Write-Host " USERNAME:             $ProxyUser"
+        Write-Host " PASSWORD:             $ProxyPass"
+        Write-Host "=================================================================="
+        Write-Host " COPY-PASTE FOR SOCKS5 COMPATIBLE APPS:"
+        Write-Host "socks5://$($ProxyUser):$($ProxyPass)@$($TailscaleIP):$ProxyPort"
+        Write-Host "==================================================================`n"
 
     - name: Keep Alive (6 Hours)
       shell: powershell
