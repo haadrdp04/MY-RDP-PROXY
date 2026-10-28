@@ -1,0 +1,59 @@
+name: Emergency 6-Hour Proxy Server
+
+on:
+  workflow_dispatch: # Allows you to start it manually from your phone/PC with one click
+
+jobs:
+  run-proxy:
+    runs-on: windows-latest
+    timeout-minutes: 360 # Hard 6-hour limit enforced by GitHub
+
+    steps:
+    - name: Verify Tailscale Secret
+      run: |
+        if ( "${{ secrets.TAILSCALE_AUTH_KEY }}" -eq "" ) { Write-Error "Missing TAILSCALE_AUTH_KEY in GitHub Secrets!" ; exit 1 }
+
+    - name: Connect to Tailscale Network
+      uses: tailscale/github-action@v3
+      with:
+        authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+
+    - name: Deploy and Configure Authenticated Proxy
+      shell: powershell
+      run: |
+        # 1. Download Gost (A lightweight, high-performance proxy binary)
+        Invoke-WebRequest -Uri "https://github.com" -OutFile "gost.zip"
+        Expand-Archive -Path "gost.zip" -DestinationPath "gost" -Force
+        
+        # 2. Automatically generate secure, random credentials for this session
+        $ProxyUser = -join ((65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
+        $ProxyPass = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 12 | ForEach-Object {[char]$_})
+        $ProxyPort = "8080"
+        
+        # 3. Retrieve the Runner's Tailscale IPv4 Address
+        $TailscaleIP = (tailscale ip -4).Trim()
+        
+        # 4. Launch the dual-protocol server (Handles both SOCKS5 and HTTP simultaneously)
+        # It runs invisibly in the background on port 8080
+        Start-Process -FilePath ".\gost\gost-windows-amd64.exe" -ArgumentList "-L=http://$($ProxyUser):$($ProxyPass)@:$ProxyPort", "-L=socks5://$($ProxyUser):$($ProxyPass)@:$ProxyPort" -WindowStyle Hidden
+        
+        # 5. Format and print the exact credentials explicitly for easy copying
+        Write-Host "`n"
+        Write-Host "==================================================================" -ForegroundColor Cyan
+        Write-Host "🚀 YOUR EMERGENCY HIGH-SPEED PROXY IS READY!" -ForegroundColor Green
+        Write-Host "==================================================================" -ForegroundColor Cyan
+        Write-Host "📍 SERVER IP (Tailscale): $TailscaleIP" -ForegroundColor Yellow
+        Write-Host "🔢 PORT:                 $ProxyPort" -ForegroundColor Yellow
+        Write-Host "👤 USERNAME:             $ProxyUser" -ForegroundColor Yellow
+        Write-Host "🔑 PASSWORD:             $ProxyPass" -ForegroundColor Yellow
+        Write-Host "==================================================================" -ForegroundColor Cyan
+        Write-Host "🔗 COPY-PASTE FOR SOCKS5 COMPATIBLE APPS:" -ForegroundColor Cyan
+        Write-Host "socks5://$($ProxyUser):$($ProxyPass)@$($TailscaleIP):$ProxyPort" -ForegroundColor Green
+        Write-Host "==================================================================" -ForegroundColor Cyan
+        Write-Host "`n"
+
+    - name: Keep Alive (6 Hours)
+      shell: powershell
+      run: |
+        Write-Host "Proxy is actively hosting internet. Keeping connection alive..."
+        Start-Sleep -Seconds 21600
