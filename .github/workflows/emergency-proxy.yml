@@ -21,7 +21,7 @@ jobs:
     - name: Deploy and Configure Authenticated Proxy
       shell: powershell
       run: |
-        # 1. Download Gost (Correct direct archive link)
+        # 1. Download Gost (Using the verified v3.3.0 release link)
         Invoke-WebRequest -Uri "https://github.com" -OutFile "gost.zip"
         Expand-Archive -Path "gost.zip" -DestinationPath "gost" -Force
         
@@ -33,10 +33,10 @@ jobs:
         # 3. Retrieve the Runner's Tailscale IPv4 Address
         $TailscaleIP = (tailscale ip -4).Trim()
         
-        # 4. Launch the dual-protocol server 
-        Start-Process -FilePath ".\gost\gost-windows-amd64.exe" -ArgumentList "-L=http://$($ProxyUser):$($ProxyPass)@:$ProxyPort", "-L=socks5://$($ProxyUser):$($ProxyPass)@:$ProxyPort" -WindowStyle Hidden
+        # 4. Launch the dual-protocol server using version 3 execution commands
+        Start-Process -FilePath ".\gost\gost.exe" -ArgumentList "-L=http://$($ProxyUser):$($ProxyPass)@:$ProxyPort", "-L=socks5://$($ProxyUser):$($ProxyPass)@:$ProxyPort" -WindowStyle Hidden
         
-        # 5. Format and print the exact credentials cleanly using plain text strings
+        # 5. Format and print the exact credentials cleanly
         Write-Host "`n"
         Write-Host "==================================================================" -ForegroundColor Cyan
         Write-Host " YOUR EMERGENCY HIGH-SPEED PROXY IS READY!" -ForegroundColor Green
