@@ -22,14 +22,17 @@ jobs:
     - name: Deploy and Configure Authenticated Proxy
       shell: powershell
       run: |
-        # 1. Download and Extract Gost cleanly
+        # 1. Open Port 8080 on the Windows Firewall explicitly
+        New-NetFirewallRule -DisplayName "Gost Proxy Port" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8080
+
+        # 2. Download and Extract Gost using the exact v2.11.5 direct download link
         Invoke-WebRequest -Uri "https://github.com/ginuerzh/gost/releases/download/v2.11.5/gost-windows-amd64-2.11.5.zip" -OutFile "gost.zip"
         Expand-Archive -Path "gost.zip" -DestinationPath "gost" -Force
         
-        # Smoothly rename the binary file
+        # Smoothly rename the binary file matching the v2.11.5 extracted package layout
         Rename-Item ".\gost\gost-windows-amd64.exe" "gost.exe"
         
-        # 2. Automatically generate secure, random credentials for this session
+        # 3. Automatically generate secure, random credentials for this session
         $ProxyUser = -join ((65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
         $ProxyPass = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 12 | ForEach-Object {[char]$_})
         $ProxyPort = "8080"
