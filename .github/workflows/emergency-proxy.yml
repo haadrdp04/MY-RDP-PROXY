@@ -22,7 +22,7 @@ jobs:
       shell: powershell
       run: |
         # 1. Download Gost (Using the verified v3.3.0 release link)
-        Invoke-WebRequest -Uri "https://github.com" -OutFile "gost.zip"
+        Invoke-WebRequest -Uri "https://github.com/ginuerzh/gost/releases/download/v2.11.5/gost-windows-amd64-2.11.5.zip" -OutFile "gost.zip"
         Expand-Archive -Path "gost.zip" -DestinationPath "gost" -Force
         
         # 2. Automatically generate secure, random credentials for this session
