@@ -1,12 +1,12 @@
 name: Emergency 6-Hour Proxy Server
 
 on:
-  workflow_dispatch: # Allows you to start it manually from your phone/PC with one click
+  workflow_dispatch: 
 
 jobs:
   run-proxy:
     runs-on: windows-latest
-    timeout-minutes: 360 # Hard 6-hour limit enforced by GitHub
+    timeout-minutes: 360 
 
     steps:
     - name: Verify Tailscale Secret
@@ -21,7 +21,7 @@ jobs:
     - name: Deploy and Configure Authenticated Proxy
       shell: powershell
       run: |
-        # 1. Download Gost (A lightweight, high-performance proxy binary)
+        # 1. Download Gost (Correct direct archive link)
         Invoke-WebRequest -Uri "https://github.com" -OutFile "gost.zip"
         Expand-Archive -Path "gost.zip" -DestinationPath "gost" -Force
         
@@ -33,21 +33,20 @@ jobs:
         # 3. Retrieve the Runner's Tailscale IPv4 Address
         $TailscaleIP = (tailscale ip -4).Trim()
         
-        # 4. Launch the dual-protocol server (Handles both SOCKS5 and HTTP simultaneously)
-        # It runs invisibly in the background on port 8080
+        # 4. Launch the dual-protocol server 
         Start-Process -FilePath ".\gost\gost-windows-amd64.exe" -ArgumentList "-L=http://$($ProxyUser):$($ProxyPass)@:$ProxyPort", "-L=socks5://$($ProxyUser):$($ProxyPass)@:$ProxyPort" -WindowStyle Hidden
         
-        # 5. Format and print the exact credentials explicitly for easy copying
+        # 5. Format and print the exact credentials cleanly using plain text strings
         Write-Host "`n"
         Write-Host "==================================================================" -ForegroundColor Cyan
-        Write-Host "🚀 YOUR EMERGENCY HIGH-SPEED PROXY IS READY!" -ForegroundColor Green
+        Write-Host " YOUR EMERGENCY HIGH-SPEED PROXY IS READY!" -ForegroundColor Green
         Write-Host "==================================================================" -ForegroundColor Cyan
-        Write-Host "📍 SERVER IP (Tailscale): $TailscaleIP" -ForegroundColor Yellow
-        Write-Host "🔢 PORT:                 $ProxyPort" -ForegroundColor Yellow
-        Write-Host "👤 USERNAME:             $ProxyUser" -ForegroundColor Yellow
-        Write-Host "🔑 PASSWORD:             $ProxyPass" -ForegroundColor Yellow
+        Write-Host " SERVER IP (Tailscale): $TailscaleIP" -ForegroundColor Yellow
+        Write-Host " PORT:                 $ProxyPort" -ForegroundColor Yellow
+        Write-Host " USERNAME:             $ProxyUser" -ForegroundColor Yellow
+        Write-Host " PASSWORD:             $ProxyPass" -ForegroundColor Yellow
         Write-Host "==================================================================" -ForegroundColor Cyan
-        Write-Host "🔗 COPY-PASTE FOR SOCKS5 COMPATIBLE APPS:" -ForegroundColor Cyan
+        Write-Host " COPY-PASTE FOR SOCKS5 COMPATIBLE APPS:" -ForegroundColor Cyan
         Write-Host "socks5://$($ProxyUser):$($ProxyPass)@$($TailscaleIP):$ProxyPort" -ForegroundColor Green
         Write-Host "==================================================================" -ForegroundColor Cyan
         Write-Host "`n"
